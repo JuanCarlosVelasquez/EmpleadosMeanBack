@@ -1,77 +1,80 @@
-const empleadoCtrl={};
-const Empleado = require('../models/Empleado');
+const EmpleadosRepository = require('../repositories/empleados.repository');
+const EmpleadoDTO = require('../dto/empleado.dto');
 
-/*empleadoCtrl.getEmpleados=(req,res)=>{     
-    res.send('get empleados') 
-}*/
-empleadoCtrl.getEmpleados= async(req, res)=> {    
-    try { 
-        const empleados= await Empleado.find();    
-        res.json(empleados);      
-        //res.send('get empleados') 
-    } catch (error) {
-        res.status(500).json({ error: 'Error al obtener los empleados' });
-    }    
-} 
+const empleadosRepository = new EmpleadosRepository();
 
-/*------------------------------------------------*/
-//empleadoCtrl.createEmpleado=(req,res)=>{} 
-empleadoCtrl.createEmpleado= async(req,res)=>{     
-    try {
-        const empleado=new Empleado({             
-            nombre: req.body.nombre,             
-            cargo: req.body.cargo,             
-            departamento:req.body.departamento,             
-            sueldo:req.body.sueldo         
-        });     
-        console.log(empleado);     
-        await empleado.save();     
-        res.json('status: Datos guardados'); 
-    } catch (error) {
-        res.status(500).json({ error: 'Error al crear el empleado' });
-      }
-} 
+async function createEmpleado(req, res) {
+  const data = req.body;
+  const empleadoDTO = new EmpleadoDTO(data.nombre, data.cargo, data.departamento, data.sueldo);
 
-/*------------------------------------------------*/
-//empleadoCtrl.getEmpleado=(req,res)=>{} 
-empleadoCtrl.getEmpleado = async (req, res) => {
   try {
-    const empleado = await Empleado.findById(req.params.id);
-    if (!empleado) {
-      return res.status(404).json({ error: 'Empleado no encontrado' });
-    }
-    res.json(empleado);
+    const nuevoEmpleado = await empleadosRepository.createEmpleado(empleadoDTO);
+    res.status(201).json(nuevoEmpleado);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener el empleado' });
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al crear el empleado' });
   }
+}
+
+async function getEmpleados(req, res) {
+  try {
+    const empleados = await empleadosRepository.getEmpleados();
+    res.status(200).json(empleados);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al obtener los empleados' });
+  }
+}
+
+async function getEmpleado(req, res) {
+  const { id } = req.params;
+  try {
+    const empleado = await empleadosRepository.getEmpleadoById(id);
+    if (!empleado) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado' });
+    }
+    res.status(200).json(empleado);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al obtener el empleado' });
+  }
+}
+
+async function updateEmpleado(req, res) {
+  const { id } = req.params;
+  const data = req.body;
+  const empleadoDTO = new EmpleadoDTO(data.nombre, data.cargo, data.departamento, data.sueldo);
+
+  try {
+    const empleadoEditado = await empleadosRepository.updateEmpleadoById(id, empleadoDTO);
+    if (!empleadoEditado) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado' });
+    }
+    res.status(200).json(empleadoEditado);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al editar el empleado' });
+  }
+}
+
+async function deleteEmpleado(req, res) {
+  const { id } = req.params;
+  try {
+    const empleadoEliminado = await empleadosRepository.deleteEmpleadoById(id);
+    if (!empleadoEliminado) {
+      return res.status(404).json({ mensaje: 'Empleado no encontrado' });
+    }
+    res.status(200).json({ mensaje: 'Empleado eliminado correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al eliminar el empleado' });
+  }
+}
+
+module.exports = {
+  createEmpleado,
+  getEmpleados,
+  getEmpleado,
+  updateEmpleado,
+  deleteEmpleado,
 };
-
-/*------------------------------------------------*/
-//empleadoCtrl.editEmpleado=(req,res)=>{} 
-empleadoCtrl.editEmpleado=async(req,res)=>{     
-    try {
-        const {_id}=req.params;     
-        const empleado={         
-            nombre: req.body.nombre,         
-            cargo: req.body.cargo,         
-            departamento: req.body.departamento,         
-            sueldo: req.body.sueldo     };     
-        await Empleado.findByIdAndUpdate(req.params.id, {$set:empleado},{new: true});     
-        res.json('status: Datos actualizados'); 
-    } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar el empleado' });
-    }
-} 
-
-/*------------------------------------------------*/
-//empleadoCtrl.deleteEmpleado=(req,res)=>{}
-empleadoCtrl.deleteEmpleado=async(req,res)=>{    
-    try { 
-        await Empleado.findByIdAndRemove(req.params.id);     
-        res.json('status: Empleado ha sido removido');   
-    } catch (error) {
-        res.status(500).json({ error: 'Error al eliminar el empleado' });
-    }
-} 
-
-module.exports=empleadoCtrl; 
